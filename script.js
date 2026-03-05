@@ -1,6 +1,5 @@
 // ===========================
 // Google Apps Script Web App URL
-// ※ デプロイ後にこのURLを実際のURLに置き換えてください
 // ===========================
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwq8EQti0YscYDh2uTRBpcVXiXzyuzqMv1Z87QNZVLRCxouFKSJQ1CVjyVV0KBp8qbI/exec';
 
@@ -14,15 +13,12 @@ const successMessage = document.getElementById('successMessage');
 form.addEventListener('submit', async function (e) {
   e.preventDefault();
 
-  // Validate
   if (!validateForm()) return;
 
-  // Loading state
   submitBtn.disabled = true;
   submitBtn.classList.add('is-loading');
   submitBtn.querySelector('.btn-text').textContent = '送信中';
 
-  // Collect form data
   const data = {
     timestamp: new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
     companyName: getValue('companyName'),
@@ -41,14 +37,17 @@ form.addEventListener('submit', async function (e) {
   };
 
   try {
-    await fetch(GAS_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
+    // GETリクエストでデータを送信（no-corsリダイレクト問題を回避）
+    const encodedData = encodeURIComponent(JSON.stringify(data));
+    const url = GAS_URL + '?data=' + encodedData;
 
-    // Show success
+    // imgタグを使ったGETリクエスト（CORSを完全に回避）
+    const img = new Image();
+    img.src = url;
+
+    // 少し待ってから成功画面を表示
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     form.style.display = 'none';
     successMessage.style.display = 'block';
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -74,7 +73,6 @@ function getValue(id) {
 // ===========================
 function validateForm() {
   let isValid = true;
-
   const fields = [
     { id: 'companyName', type: 'text' },
     { id: 'representativeName', type: 'text' },
@@ -113,14 +111,12 @@ function validateForm() {
     }
   });
 
-  // Scroll to first error
   if (!isValid) {
     const firstError = form.querySelector('.is-error');
     if (firstError) {
       firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
-
   return isValid;
 }
 
